@@ -8,6 +8,11 @@ const bookingController = {
 
       // Fetch property to calculate total price
 
+      const property = await Property.findByPk(propertyId);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+
       if (!(await isAvailable(propertyId, checkInDate, checkOutDate))) {
         return res
           .status(400)
@@ -85,7 +90,13 @@ const bookingController = {
       const { status } = req.body;
 
       const booking = await Booking.findOne({
-        include: [{ model: Property, where: { hostId: req.user.id } }],
+        include: [
+          {
+            model: Property,
+            as: "property", // Add the alias here
+            where: { hostId: req.user.id },
+          },
+        ],
         where: { id },
       });
 
@@ -97,7 +108,12 @@ const bookingController = {
       await booking.save();
       res.json(booking);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update booking status" });
+      res
+        .status(500)
+        .json({
+          error: error.message,
+          message: "Failed to update booking status",
+        });
     }
   },
 };

@@ -7,39 +7,45 @@ const authController = {
       const token = jwt.sign(
         {
           id: req.user.id,
-          email: req.user.email,
           role: req.user.role,
+          name: req.user.name,
+          email: req.user.email,
+          profilePicture: req.user.profilePicture,
         },
         process.env.JWT_SECRET,
         { expiresIn: "24h" }
       );
-
-      // Redirect to frontend with token
-      res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+      // Redirect to front-end with token as query parameter
+      res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`);
     } catch (error) {
-      res.redirect(
-        `${process.env.FRONTEND_URL}/login?error=authentication_failed`
-      );
+      res.status(500).json({ message: "Authentication failed" });
     }
   },
 
-  verifyToken : (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1]; 
-  
+  verifyToken: (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
       return res.status(401).send({ message: "No token provided" });
     }
-  
+
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
-        return res.status(403).send({ message: "Failed to authenticate token" });
+        console.error("JWT Verification Error:", err);
+        return res.status(403).send({ message: "Invalid or expired token" });
       }
-  
-      // Assuming `decoded` has the user info
-      res.status(200).send({ user: decoded });
+
+      // Return the user data in the expected format
+      res.status(200).send({
+        data: {
+          id: decoded.id,
+          name: decoded.name,
+          email: decoded.email,
+          profilePicture: decoded.profilePicture,
+          role: decoded.role,
+        },
+      });
     });
   },
-  
 
   logout: (req, res) => {
     res.json({ message: "Logged out successfully" });
